@@ -19,6 +19,8 @@ function App() {
   const [ticketSubmitting, setTicketSubmitting] = useState(false);
   const [ticketSuccess, setTicketSuccess] = useState('');
 
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
   const [newProp, setNewProp] = useState({
     title: '',
     category: 'Rental',
@@ -38,7 +40,7 @@ function App() {
   }, []);
 
   const fetchProperties = () => {
-    axios.get('http://localhost:5000/api/properties')
+    axios.get(`${API_URL}/api/properties`)
       .then(res => {
         setProperties(res.data);
         setLoading(false);
@@ -50,7 +52,7 @@ function App() {
   };
 
   const fetchTickets = () => {
-    axios.get('http://localhost:5000/api/tickets')
+    axios.get(`${API_URL}/api/properties`)
       .then(res => setTickets(res.data))
       .catch(err => console.error("Error fetching tickets:", err));
   };
@@ -87,7 +89,7 @@ function App() {
       formData.append('photo', ticketPhoto);
     }
 
-    axios.post('http://localhost:5000/api/tickets', formData, {
+    axios.post(`${API_URL}/api/tickets`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
     .then(() => {
@@ -120,7 +122,7 @@ function App() {
       formData.append('image', propertyPhoto);
     }
 
-    axios.post('http://localhost:5000/api/properties', formData, {
+    axios.post(`${API_URL}/api/properties`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
     .then(() => {
@@ -146,14 +148,14 @@ function App() {
   };
 
   const handleUpdateTicketStatus = (ticketId, newStatus) => {
-    axios.patch(`http://localhost:5000/api/tickets/${ticketId}/status`, { status: newStatus })
+    axios.patch(`${API_URL}/api/tickets/${ticketId}/status`, { status: newStatus })
       .then(() => fetchTickets())
       .catch(err => console.error("Error updating ticket status:", err));
   };
 
   const handleDeleteProperty = (id) => {
     if (window.confirm("Are you sure you want to delete this property?")) {
-      axios.delete(`http://localhost:5000/api/properties/${id}`)
+      axios.delete(`${API_URL}/api/properties/${id}`)
         .then(() => fetchProperties())
         .catch(err => console.error("Error deleting property:", err));
     }
