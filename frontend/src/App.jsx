@@ -49,6 +49,7 @@ function App() {
   const [propertyPhoto, setPropertyPhoto] = useState(null);
   const [propSubmitting, setPropSubmitting] = useState(false);
   const [propSuccess, setPropSuccess] = useState('');
+  const [propError, setPropError] = useState('');
 
   useEffect(() => {
     fetchProperties();
@@ -176,6 +177,8 @@ function App() {
   const handleAddProperty = (e) => {
     e.preventDefault();
     setPropSubmitting(true);
+    setPropError('');
+    setPropSuccess('');
 
     const formData = new FormData();
     formData.append('title', newProp.title);
@@ -212,6 +215,13 @@ function App() {
     })
     .catch(err => {
       console.error("Error creating property:", err);
+      setPropError(
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        (err.request
+          ? `Could not reach the server at ${API_URL}. Make sure the backend is running, then try again.`
+          : 'Unable to publish this property. Please try again.')
+      );
       setPropSubmitting(false);
     });
   };
@@ -231,10 +241,10 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-gray-100 font-sans relative">
-      <header className="bg-neutral-900 border-b border-yellow-500/30 shadow-2xl sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-3">
+    <div className="app-shell min-h-screen bg-black text-gray-100 font-sans relative">
+      <header className="app-header bg-neutral-900 border-b border-yellow-500/30 shadow-2xl sticky top-0 z-40">
+        <div className="app-header-inner max-w-7xl mx-auto px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="app-brand flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-yellow-600 via-yellow-400 to-yellow-200 flex items-center justify-center text-black font-extrabold text-lg">
               GA
             </div>
@@ -243,10 +253,11 @@ function App() {
             </h1>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="flex bg-neutral-950 p-1 rounded-xl border border-yellow-500/20">
+          <div className="app-navigation">
+            <nav className="flex bg-neutral-950 p-1 rounded-xl border border-yellow-500/20" aria-label="Main navigation">
               <button
                 onClick={() => setActiveTab('properties')}
+                aria-pressed={activeTab === 'properties'}
                 className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                   activeTab === 'properties' ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-black shadow' : 'text-gray-400 hover:text-yellow-400'
                 }`}
@@ -255,6 +266,7 @@ function App() {
               </button>
               <button
                 onClick={() => setActiveTab('portal')}
+                aria-pressed={activeTab === 'portal'}
                 className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                   activeTab === 'portal' ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-black shadow' : 'text-gray-400 hover:text-yellow-400'
                 }`}
@@ -263,6 +275,7 @@ function App() {
               </button>
               <button
                 onClick={() => setActiveTab('tickets')}
+                aria-pressed={activeTab === 'tickets'}
                 className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                   activeTab === 'tickets' ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-black shadow' : 'text-gray-400 hover:text-yellow-400'
                 }`}
@@ -271,18 +284,19 @@ function App() {
               </button>
               <button
                 onClick={() => setActiveTab('admin')}
+                aria-pressed={activeTab === 'admin'}
                 className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                   activeTab === 'admin' ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-black shadow' : 'text-gray-400 hover:text-yellow-400'
                 }`}
               >
                 Admin Dashboard
               </button>
-            </div>
+            </nav>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-10">
+      <main className="app-main max-w-7xl mx-auto px-6 py-10">
         {/* LISTINGS TAB */}
         {activeTab === 'properties' && (
           <>
@@ -552,6 +566,7 @@ function App() {
             <div className="bg-neutral-900 border border-yellow-500/30 rounded-2xl p-8 shadow-2xl">
               <h3 className="text-lg font-extrabold text-yellow-400 mb-6 uppercase tracking-wider">Publish New Property</h3>
               {propSuccess && <div className="mb-6 bg-emerald-500/10 text-emerald-400 p-4 rounded-xl text-sm text-center">{propSuccess}</div>}
+              {propError && <div role="alert" className="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">{propError}</div>}
 
               <form onSubmit={handleAddProperty} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -632,6 +647,10 @@ function App() {
           </div>
         )}
       </main>
+
+      <footer className="app-footer">
+        Golden Aquilas &bull; Property Management &amp; Real Estate
+      </footer>
 
       {/* Property Details Modal */}
       {selectedProperty && (
