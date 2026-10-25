@@ -4,14 +4,14 @@ const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  phone: { type: String, required: true },
-  role: { 
-    type: String, 
-    enum: ['Super Admin', 'Agent', 'Landlord', 'Tenant', 'Student', 'Guest', 'Technician'],
-    default: 'Tenant' 
-  },
-  assignedUnit: { type: String, default: '' },
-  isVerified: { type: Boolean, default: false }
+  phone: { type: String, default: '' },
+  role: { type: String, enum: ['student', 'tenant', 'landlord', 'admin'], default: 'tenant' },
+  // Room / Property allocation details
+  propertyName: { type: String, default: '' },
+  roomNumber: { type: String, default: '' },
+  bedNumber: { type: String, default: '' },
+  rentAmount: { type: Number, default: 0 },
+  paymentStatus: { type: String, enum: ['Paid', 'Pending', 'Overdue'], default: 'Paid' }
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);

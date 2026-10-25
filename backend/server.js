@@ -55,6 +55,7 @@ mongoose.connect(process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://
           period: "per month",
           amenities: ["Wi-Fi", "24/7 Security", "Hot Shower", "Study Lounge"],
           imageUrl: "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=800&q=80",
+          videoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
           hostelDetails: { institution: "Campus", roomType: "Single Room", totalBeds: 50, vacantBeds: 12 }
         },
         {
@@ -64,7 +65,8 @@ mongoose.connect(process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://
           price: 6500,
           period: "per night",
           amenities: ["Master En-suite", "Balcony View", "CCTV Monitoring", "Dedicated Parking"],
-          imageUrl: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80"
+          imageUrl: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80",
+          videoUrl: ""
         },
         {
           title: "Ruaka Modern 2BR Apartment",
@@ -73,7 +75,8 @@ mongoose.connect(process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://
           price: 45000,
           period: "per month",
           amenities: ["Lift Access", "Backup Generator", "Borehole Water", "Children Play Area"],
-          imageUrl: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80"
+          imageUrl: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80",
+          videoUrl: ""
         }
       ];
       await Property.insertMany(sampleProperties);
@@ -81,6 +84,48 @@ mongoose.connect(process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://
     }
   })
   .catch((err) => console.error('MongoDB Connection Error:', err));
+
+// ================= AUTH API =================
+
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { name, email, password, phone, role, propertyName, roomNumber, bedNumber, rentAmount } = req.body;
+    
+    const existingUser = await User.findOne({ email });
+    if (existingUser) return res.status(400).json({ message: 'Email already registered' });
+
+    const newUser = new User({ 
+      name, 
+      email, 
+      password, 
+      phone: phone || '', 
+      role: role || 'tenant', 
+      propertyName: propertyName || '', 
+      roomNumber: roomNumber || '',
+      bedNumber: bedNumber || '',
+      rentAmount: rentAmount || 0,
+      paymentStatus: 'Pending'
+    });
+    
+    await newUser.save();
+    res.status(201).json({ message: 'Registration successful', user: newUser });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const user = await User.findOne({ email, password });
+
+    if (!user) return res.status(400).json({ message: 'Invalid email or password' });
+
+    res.json({ message: 'Login successful', user });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // ================= PROPERTIES API =================
 
@@ -93,50 +138,11 @@ app.get('/api/properties', async (req, res) => {
   }
 });
 
-app.post('/api/properties/seed', async (req, res) => {
-  try {
-    await Property.deleteMany({});
-    const sampleProperties = [
-      {
-        title: "Qwetu Suburbia Hostel",
-        category: "Hostel",
-        location: "Ruiru / Near Main Gate",
-        price: 15000,
-        period: "per month",
-        amenities: ["Wi-Fi", "24/7 Security", "Hot Shower", "Study Lounge"],
-        imageUrl: "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=800&q=80",
-        hostelDetails: { institution: "Campus", roomType: "Single Room", totalBeds: 50, vacantBeds: 12 }
-      },
-      {
-        title: "Sunset Luxury BnB Studio",
-        category: "BnB",
-        location: "Westlands, Nairobi",
-        price: 6500,
-        period: "per night",
-        amenities: ["Master En-suite", "Balcony View", "CCTV Monitoring", "Dedicated Parking"],
-        imageUrl: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80"
-      },
-      {
-        title: "Ruaka Modern 2BR Apartment",
-        category: "Rental",
-        location: "Ruaka, Kiambu",
-        price: 45000,
-        period: "per month",
-        amenities: ["Lift Access", "Backup Generator", "Borehole Water", "Children Play Area"],
-        imageUrl: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80"
-      }
-    ];
-    const created = await Property.insertMany(sampleProperties);
-    res.status(201).json({ message: "Database seeded successfully!", created });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Create property with file upload support ('image' field)
+// Create property with file upload support ('image' field) & videoUrl
 app.post('/api/properties', upload.single('image'), async (req, res) => {
   try {
-    const imageUrl = req.file ? `http://localhost:5000/uploads/${req.file.filename}` : req.body.imageUrl || '';
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const imageUrl = req.file ? `${baseUrl}/uploads/${req.file.filename}` : req.body.imageUrl || '';
     
     const propertyPayload = {
       title: req.body.title,
@@ -148,7 +154,8 @@ app.post('/api/properties', upload.single('image'), async (req, res) => {
         ? req.body.amenities.split(',').map(a => a.trim()) 
         : req.body.amenities,
       description: req.body.description,
-      imageUrl: imageUrl
+      imageUrl: imageUrl,
+      videoUrl: req.body.videoUrl || ''
     };
 
     const newProperty = new Property(propertyPayload);
@@ -181,7 +188,8 @@ app.get('/api/tickets', async (req, res) => {
 
 app.post('/api/tickets', upload.single('photo'), async (req, res) => {
   try {
-    const imageUrl = req.file ? `http://localhost:5000/uploads/${req.file.filename}` : '';
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const imageUrl = req.file ? `${baseUrl}/uploads/${req.file.filename}` : '';
     
     const newTicket = new Ticket({
       propertyName: req.body.propertyName,

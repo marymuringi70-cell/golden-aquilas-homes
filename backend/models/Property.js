@@ -9,6 +9,7 @@ const propertySchema = new mongoose.Schema({
   description: { type: String, default: '' },
   amenities: [String],
   imageUrl: { type: String, required: true },
+  videoUrl: { type: String, default: '' }, // <--- Add this line here!
   hostelDetails: {
     institution: String,
     roomType: String,
